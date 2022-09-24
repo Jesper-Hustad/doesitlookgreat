@@ -1,0 +1,13 @@
+three js use directional lights
+
+load simple HDR
+create dynamic shadows
+load relevant 
+
+https://github.com/mrdoob/three.js/blob/master/examples/webgl_lights_physical.html
+
+https://github.com/mrdoob/three.js/blob/master/examples/webgl_loader_lwo.html
+
+https://github.com/mrdoob/three.js/blob/master/examples/webgl_loader_gltf.html
+
+https://github.com/mrdoob/three.js/blob/master/examples/webgl_materials_texture_filters.html
