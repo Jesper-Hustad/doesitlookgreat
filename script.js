@@ -35,6 +35,8 @@ animate();
 
 async function init() {
 
+    document.getElementById("myRange").value = parseInt(document.cookie)
+
     container = document.createElement('div');
     document.body.appendChild(container);
 
@@ -225,7 +227,7 @@ async function init() {
     let url = "alpha.png";
     let img = new Image();
     await new Promise(r => img.onload = r, img.src = url)
-    var r = 4
+
 
 
     ctxx.drawImage(img, 0, 0, 256, 256);
@@ -241,6 +243,12 @@ async function init() {
         dataMono16[i] = (data[4 * i] + data[4 * i + 1] + data[4 * i + 2]) / 3;
     }
 
+    if (document.cookie == '') { document.cookie = "5" }
+
+    // blur mono ----
+
+    let r = parseInt(document.cookie)
+
     blurMono16(dataMono16, 256, 256, r);
 
     for (i = 0; i < size; i++) {
@@ -252,12 +260,6 @@ async function init() {
 
     await sleep(200)
     const textur = new THREE.CanvasTexture(ctxx.canvas);
-
-
-
-
-
-
 
 
     //  SHADOW BOX
@@ -322,34 +324,42 @@ function onWindowResize() {
 
 }
 
+document.getElementById("myRange").addEventListener("change", function() {
+    let a = document.getElementById("myRange").value
+    document.cookie = a + ''
+    document.location.reload()
+})
+
 //
 
-const gui = new dat.GUI()
+// const gui = new dat.GUI()
 
-// cubeFolder.add(cube.rotation, 'x', 0, Math.PI * 2)
-// cubeFolder.add(cube.rotation, 'y', 0, Math.PI * 2)
-// cubeFolder.add(cube.rotation, 'z', 0, Math.PI * 2)
-// cubeFolder.open()
-const cameraFolder = gui.addFolder('Camera')
-cameraFolder.add(camera.position, 'x', -50, 50)
-cameraFolder.add(camera.position, 'y', 0, 200)
-cameraFolder.add(camera.position, 'z', -50, 50)
+// // cubeFolder.add(cube.rotation, 'x', 0, Math.PI * 2)
+// // cubeFolder.add(cube.rotation, 'y', 0, Math.PI * 2)
+// // cubeFolder.add(cube.rotation, 'z', 0, Math.PI * 2)
+// // cubeFolder.open()
+// const cameraFolder = gui.addFolder('Camera')
+// cameraFolder.add(camera.position, 'x', -50, 50)
+// cameraFolder.add(camera.position, 'y', 0, 200)
+// cameraFolder.add(camera.position, 'z', -50, 50)
 
-const lightFolder = gui.addFolder('Light')
-lightFolder.add(light.position, 'x', -50, 500)
-lightFolder.add(light.position, 'y', 0, 200)
-lightFolder.add(light.position, 'z', -50, 500)
+// const lightFolder = gui.addFolder('Light')
+// lightFolder.add(light.position, 'x', -50, 500)
+// lightFolder.add(light.position, 'y', 0, 200)
+// lightFolder.add(light.position, 'z', -50, 500)
 
-// create a cube folder for cube variable in x y z
-const cubeFolder = gui.addFolder('Cube')
-cubeFolder.add(cube.position, 'x', -10, 10)
-cubeFolder.add(cube.position, 'y', -10, 10)
-cubeFolder.add(cube.position, 'z', -10, 10)
-
-
+// // create a cube folder for cube variable in x y z
+// const cubeFolder = gui.addFolder('Cube')
+// cubeFolder.add(cube.position, 'x', -10, 10)
+// cubeFolder.add(cube.position, 'y', -10, 10)
+// cubeFolder.add(cube.position, 'z', -10, 10)
 
 
-cameraFolder.open()
+// const blurRadius = gui.addFolder('Blur radius')
+// blurRadius.add(r, 'radius', 0, 20)
+
+
+// cameraFolder.open()
 
 
 function animate() {
@@ -380,67 +390,3 @@ function animate() {
 //   imageObj.onload = function(){
 //     blur(imageObj, context);
 //   };
-
-function blurTexture(texture) {
-
-    const width = texture.image.width;
-    const height = texture.image.height;
-
-    const cameraRTT = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const sceneRTT = new THREE.Scene();
-
-    // render targets
-
-    const renderTargetTemp = new THREE.WebGLRenderTarget(width, height);
-    const renderTargetFinal = new THREE.WebGLRenderTarget(width, height);
-
-    // shader materials
-
-    const hBlurMaterial = new THREE.ShaderMaterial({
-        vertexShader: THREE.HorizontalBlurShader.vertexShader,
-        fragmentShader: THREE.HorizontalBlurShader.fragmentShader,
-        uniforms: THREE.UniformsUtils.clone(THREE.HorizontalBlurShader.uniforms)
-    });
-
-    hBlurMaterial.uniforms.tDiffuse.value = texture;
-    hBlurMaterial.uniforms.h.value = 1 / width;
-
-    const vBlurMaterial = new THREE.ShaderMaterial({
-        vertexShader: THREE.VerticalBlurShader.vertexShader,
-        fragmentShader: THREE.VerticalBlurShader.fragmentShader,
-        uniforms: THREE.UniformsUtils.clone(THREE.VerticalBlurShader.uniforms)
-    });
-
-    vBlurMaterial.uniforms.tDiffuse.value = renderTargetTemp.texture;
-    vBlurMaterial.uniforms.v.value = 1 / height;
-
-    // fullscreen quad
-
-    const planeGeometry = new THREE.PlaneGeometry(2, 2);
-
-    const fullScreenQuad = new THREE.Mesh(planeGeometry, hBlurMaterial);
-    sceneRTT.add(fullScreenQuad);
-
-    // first pass
-
-    renderer.setRenderTarget(renderTargetTemp);
-    renderer.render(sceneRTT, cameraRTT);
-    renderer.setRenderTarget(null);
-
-    // second pass
-
-    fullScreenQuad.material = vBlurMaterial;
-
-    renderer.setRenderTarget(renderTargetFinal);
-    renderer.render(sceneRTT, cameraRTT)
-    renderer.setRenderTarget(null);
-
-
-
-
-    //
-
-    return renderTargetFinal.texture;
-
-
-}
