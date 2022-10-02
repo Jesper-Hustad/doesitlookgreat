@@ -9,11 +9,13 @@
 
 
 
-import * as THREE from 'three';
+// import * as THREE from 'three';
 
 import Stats from 'https://unpkg.com/three@0.144.0/examples/jsm/libs/stats.module.js';
 
 import { OrbitControls } from 'https://unpkg.com/three@0.144.0/examples/jsm/controls/OrbitControls.js';
+
+import blurMono16 from './mono16.js';
 
 // import dat gui
 // import * as dat from "./dat.gui.min.js"
@@ -26,7 +28,7 @@ const SCREEN_WIDTH = window.innerWidth;
 const SCREEN_HEIGHT = window.innerHeight;
 
 let container, stats;
-let camera, scene, renderer, light, cube;
+var camera, scene, renderer, light, cube;
 
 await init();
 animate();
@@ -39,7 +41,7 @@ async function init() {
     // CAMERA
 
     camera = new THREE.PerspectiveCamera(40, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 10000);
-    camera.position.set(0, 50, 0);
+    camera.position.set(0, 15, 0);
 
     camera.rotation.y = 0;
     camera.rotation.x = -Math.PI / 2;
@@ -54,12 +56,12 @@ async function init() {
 
 
     // create a texture image from the alpha.png
-    const textureImage = new Image();
-    textureImage.src = 'alpha.png';
 
-    // create a texture from textureImage
-    const texture = new THREE.Texture(textureImage);
-    texture.matrixAutoUpdate = false;
+
+    // let omg = new RGBLoader().image.load('alpha.png', img => {
+    //     new BlurredEnvMapGenerator(renderer).generate(img, 0)
+    // })
+
 
 
 
@@ -73,13 +75,13 @@ async function init() {
 
     // });
     // creating a texture with canvas
-    var canvas = document.createElement('canvas'),
-        ctx = canvas.getContext('2d');
-    canvas.width = 64;
-    canvas.height = 64;
-    // drawing gray scale areas
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 50, 50);
+    // var canvas = document.createElement('canvas'),
+    //     ctx = canvas.getContext('2d');
+    // canvas.width = 64;
+    // canvas.height = 64;
+    // // drawing gray scale areas
+    // ctx.fillStyle = '#ffffff';
+    // ctx.fillRect(0, 0, 50, 50);
     // ctx.fillStyle = '#808080';
     // ctx.fillRect(32, 0, 32, 32);
     // ctx.fillStyle = '#c0c0c0';
@@ -92,25 +94,18 @@ async function init() {
     // };
     // img.src = 'https://www.tutorialspoint.com/images/seaborn-4.jpg?v=2';
 
-    // ctx.drawImage(img, 0, 0);
 
-    var text = new THREE.CanvasTexture(canvas);
 
-    // add box with shadows
-    const geometry = new THREE.BoxGeometry(10, 0.0001, 10);
-    const loader = new THREE.TextureLoader();
+    const textureImage = new Image();
+    textureImage.src = 'alpha.png';
 
-    const material = new THREE.MeshBasicMaterial({
-        // map: loader.load('https://r105.threejsfundamentals.org/threejs/resources/images/wall.jpg'),
-        alphaMap: loader.load('alpha.png'),
-        colorWrite: false,
-        depthWrite: false,
-    });
-    cube = new THREE.Mesh(geometry, material);
-    cube.position.y = 6
-    cube.position.x = 2
-    cube.castShadow = true;
-    cube.receiveShadow = true;
+    // create a texture from textureImage
+    const texture = new THREE.Texture(textureImage);
+    texture.matrixAutoUpdate = false;
+
+    // var text = new THREE.CanvasTexture(canvas);
+
+
 
     // make cube not visable
     // cube.visible = false;
@@ -124,9 +119,7 @@ async function init() {
     // add a texture to the cube using textureCube
     // cube.material.map = texture
     // cube.material.alphaMap = text
-    cube.material.alphaTest = 0.5
 
-    scene.add(cube);
 
 
 
@@ -167,11 +160,12 @@ async function init() {
     scene.add(light);
 
     //Set up shadow properties for the light
-    light.shadow.mapSize.width = 1024; // default
-    light.shadow.mapSize.height = 1024; // default
-    light.shadow.camera.near = 0.1; // default
-    light.shadow.camera.far = 5000; // default
-    light.shadow.radius = 1;
+    light.shadow.mapSize.width = 512; // default
+    light.shadow.mapSize.height = 512; // default
+    light.shadow.camera.near = 10; // default
+    light.shadow.camera.far = 50; // default
+    light.shadow.radius = 0;
+    // light.shadow.blurSample = 10000
 
     // const d = 10;
 
@@ -211,9 +205,86 @@ async function init() {
     container.appendChild(renderer.domElement);
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    renderer.shadowMap.type = THREE.PCFShadowMap; // default THREE.PCFShadowMap
     // renderer.shadowMapWidth = 1024; // default is 512
     // renderer.shadowMapHeight = 1024; // default is 512
+
+    // generate sleep function promise
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // const ctxx = document.createElement('canvas').getContext('2d');
+    const dst = document.getElementById('myCanvas')
+    const ctxx = document.getElementById('myCanvas').getContext('2d');
+    ctxx.canvas.width = 256;
+    ctxx.canvas.height = 256;
+    // ctxx.fillStyle = '#fff';
+    // ctxx.fillRect(0, 0, ctxx.canvas.width - 120, ctxx.canvas.height);
+    let url = "alpha.png";
+    let img = new Image();
+    await new Promise(r => img.onload = r, img.src = url)
+    var r = 4
+
+
+    ctxx.drawImage(img, 0, 0, 256, 256);
+    await sleep(100)
+
+    var imageData = ctxx.getImageData(0, 0, dst.width, dst.height);
+    var data = imageData.data;
+    var size = 256 * 256;
+    var dataMono16 = new Uint16Array(256 * 256);
+    var i;
+
+    for (i = 0; i < size; i++) {
+        dataMono16[i] = (data[4 * i] + data[4 * i + 1] + data[4 * i + 2]) / 3;
+    }
+
+    blurMono16(dataMono16, 256, 256, r);
+
+    for (i = 0; i < size; i++) {
+        data[4 * i] = data[4 * i + 1] = data[4 * i + 2] = dataMono16[i];
+    }
+
+    ctxx.putImageData(imageData, 0, 0);
+
+
+    await sleep(200)
+    const textur = new THREE.CanvasTexture(ctxx.canvas);
+
+
+
+
+
+
+
+
+    //  SHADOW BOX
+    const geometry = new THREE.BoxGeometry(10, 0.0001, 10);
+    const loader = await new THREE.TextureLoader();
+
+    const t = await loader.loadAsync('alpha.png')
+        // const blurred_t = t
+
+
+    const material = new THREE.MeshBasicMaterial({
+        alphaMap: textur,
+        colorWrite: false,
+        depthWrite: false,
+    });
+
+    cube = new THREE.Mesh(geometry, material);
+    cube.position.y = 6
+    cube.position.x = 2
+    cube.castShadow = true;
+    cube.receiveShadow = true;
+    cube.material.alphaTest = 0.5
+    cube.material.alphaMap.needsUpdate = true;
+
+    scene.add(cube);
+
+
 
     // CONTROLS
 
@@ -288,4 +359,88 @@ function animate() {
     renderer.render(scene, camera);
     stats.update();
     // console.log(camera.rotation)
+}
+
+// function blur(imageObj, context, passes) {
+//     var i, x, y;
+//     passes = passes || 4;
+//     context.globalAlpha = 0.125;
+//     // Loop for each blur pass.
+//     for (i = 1; i <= passes; i++) {
+//       for (y = -1; y < 2; y++) {
+//         for (x = -1; x < 2; x++) {
+//             context.drawImage(imageObj, x, y);
+//         }
+//       }
+//     }
+//     context.globalAlpha = 1.0;
+//   }
+
+//   //add the function call in the imageObj.onload
+//   imageObj.onload = function(){
+//     blur(imageObj, context);
+//   };
+
+function blurTexture(texture) {
+
+    const width = texture.image.width;
+    const height = texture.image.height;
+
+    const cameraRTT = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const sceneRTT = new THREE.Scene();
+
+    // render targets
+
+    const renderTargetTemp = new THREE.WebGLRenderTarget(width, height);
+    const renderTargetFinal = new THREE.WebGLRenderTarget(width, height);
+
+    // shader materials
+
+    const hBlurMaterial = new THREE.ShaderMaterial({
+        vertexShader: THREE.HorizontalBlurShader.vertexShader,
+        fragmentShader: THREE.HorizontalBlurShader.fragmentShader,
+        uniforms: THREE.UniformsUtils.clone(THREE.HorizontalBlurShader.uniforms)
+    });
+
+    hBlurMaterial.uniforms.tDiffuse.value = texture;
+    hBlurMaterial.uniforms.h.value = 1 / width;
+
+    const vBlurMaterial = new THREE.ShaderMaterial({
+        vertexShader: THREE.VerticalBlurShader.vertexShader,
+        fragmentShader: THREE.VerticalBlurShader.fragmentShader,
+        uniforms: THREE.UniformsUtils.clone(THREE.VerticalBlurShader.uniforms)
+    });
+
+    vBlurMaterial.uniforms.tDiffuse.value = renderTargetTemp.texture;
+    vBlurMaterial.uniforms.v.value = 1 / height;
+
+    // fullscreen quad
+
+    const planeGeometry = new THREE.PlaneGeometry(2, 2);
+
+    const fullScreenQuad = new THREE.Mesh(planeGeometry, hBlurMaterial);
+    sceneRTT.add(fullScreenQuad);
+
+    // first pass
+
+    renderer.setRenderTarget(renderTargetTemp);
+    renderer.render(sceneRTT, cameraRTT);
+    renderer.setRenderTarget(null);
+
+    // second pass
+
+    fullScreenQuad.material = vBlurMaterial;
+
+    renderer.setRenderTarget(renderTargetFinal);
+    renderer.render(sceneRTT, cameraRTT)
+    renderer.setRenderTarget(null);
+
+
+
+
+    //
+
+    return renderTargetFinal.texture;
+
+
 }
